@@ -1,6 +1,6 @@
 // Path: constants\api_constants.dart
 class ApiConstants {
-  static const String baseUrl = 'http://192.168.1.21:3000';
+  static const String baseUrl = 'http://203.194.112.254/api/client';
 
   
   // Auth Endpoints

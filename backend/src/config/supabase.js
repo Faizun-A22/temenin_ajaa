@@ -7,16 +7,33 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
+// Compatible options for Node.js < 22 WebSocket
+let options = {
+  auth: {
+    persistSession: false
+  }
+};
+try {
+  const ws = require('ws');
+  options.realtime = {
+    transport: ws
+  };
+} catch (e) {
+  // ws not installed or not supported, fall back
+}
+
 // Client untuk operasi umum
 const supabase = createClient(
   supabaseUrl,
-  supabaseAnonKey
+  supabaseAnonKey,
+  options
 );
 
 // Client admin untuk operasi khusus
 const supabaseAdmin = createClient(
   supabaseUrl,
-  supabaseServiceKey
+  supabaseServiceKey,
+  options
 );
 
 // 🔴 TAMBAHKAN: Fungsi query wrapper untuk kompatibilitas

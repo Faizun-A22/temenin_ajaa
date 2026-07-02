@@ -1,6 +1,6 @@
 class ApiConstants {
   // Use http://localhost:3001 for Android Emulator / Physical Device (via adb reverse), iOS / Web / desktop
-  static const String baseUrl = 'http://192.168.1.21:3001'; 
+  static const String baseUrl = 'http://203.194.112.254/api/driver'; 
   
   // Auth Endpoints
   static const String login = '/api/auth/login';
