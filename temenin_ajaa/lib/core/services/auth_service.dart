@@ -9,7 +9,7 @@ import 'package:temenin_ajaa/core/constants/api_constants.dart';
 import 'package:temenin_ajaa/data/models/user_model.dart';
 
 // const String BASE_URL = 'http://192.168.0.126:3000';
-const String BASE_URL = 'http://192.168.1.6:3000';
+const String BASE_URL = ApiConstants.baseUrl;
 
 class Log {
   static void d(String message) {
@@ -141,11 +141,11 @@ class AuthService {
     }
   } catch (e) {
     print('❌ EXCEPTION: $e');
-    print('═══════════════════════════════════════════════════');
     Log.e('Login error: $e');
+    
     return {
       'success': false,
-      'message': 'Koneksi error: ${e.toString()}',
+      'message': 'Gagal terhubung ke server. Silakan periksa koneksi internet Anda atau pastikan server backend berjalan.',
     };
   }
 }

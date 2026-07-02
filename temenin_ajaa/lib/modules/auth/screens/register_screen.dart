@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
-import 'package:temenin_ajaa/modules/auth/onboarding/screens/home_screen.dart';
+import 'package:temenin_ajaa/modules/clients/screens/home_loggedin_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -65,23 +65,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
       phone: _phoneController.text.trim(),
     );
 
+    if (!mounted) return;
+
     setState(() {
       _isLoading = false;
     });
 
     if (success) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Registrasi berhasil! Selamat datang!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const MainHomeScreen()),
-        );
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Registrasi berhasil! Selamat datang!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeLoggedInScreen()),
+      );
     } else {
       // Tampilkan error message dari server
       ScaffoldMessenger.of(context).showSnackBar(
@@ -92,6 +92,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
     }
   } catch (e) {
+    if (!mounted) return;
     setState(() {
       _isLoading = false;
     });

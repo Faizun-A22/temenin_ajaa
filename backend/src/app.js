@@ -7,6 +7,7 @@ require('dotenv').config();
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/client/profileRoutes');
 const driverRoutes = require('./routes/driver/driverRoutes');
+const paymentRoutes = require('./routes/client/paymentRoutes');
 
 const app = express();
 
@@ -24,6 +25,7 @@ console.log('📁 Serving static files from:', path.join(__dirname, '../uploads'
 app.use('/api/auth', authRoutes);
 app.use('/api/drivers', driverRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

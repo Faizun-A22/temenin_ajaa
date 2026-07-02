@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:temenin_ajaa/modules/auth/onboarding/screens/onboarding_screen.dart';
 import 'package:temenin_ajaa/modules/clients/screens/home_loggedin_screen.dart';
 import 'providers/auth_provider.dart';
+import 'providers/driver_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -32,6 +33,9 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider<AuthProvider>(
           create: (_) => AuthProvider()..checkAuthStatus(),
+        ),
+        ChangeNotifierProvider<DriverProvider>(
+          create: (_) => DriverProvider(),
         ),
       ],
       child: MaterialApp(

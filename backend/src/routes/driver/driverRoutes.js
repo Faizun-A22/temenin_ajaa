@@ -7,12 +7,16 @@ const {
   updateDriverStatus,
   getDriverBookings,
   updateBookingStatus,
-  getDriverEarnings
+  getDriverEarnings,
+  getAllDrivers
 } = require('../../controllers/driver/driverController')
 const { protect } = require('../../middleware/authMiddleware');
 
 // Public routes
 router.post('/register', registerDriver);
+
+// Client-facing endpoint to get all drivers
+router.get('/', protect, getAllDrivers);
 
 // Protected routes (hanya untuk driver)
 router.get('/profile', protect, getDriverProfile);

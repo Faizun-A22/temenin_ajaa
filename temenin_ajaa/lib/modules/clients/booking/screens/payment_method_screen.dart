@@ -1,6 +1,10 @@
 // lib/modules/booking/screens/payment_method_screen.dart
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../../../providers/auth_provider.dart';
 import 'tracking_driver_screen.dart'; // Import untuk navigasi ke tracking
 
 class PaymentMethodScreen extends StatefulWidget {
@@ -23,27 +27,38 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
   void initState() {
     super.initState();
     // Ambil data dari parameter atau gunakan default
-    totalPayment = widget.bookingData?['totalPayment'] ?? 255000;
-    dpAmount = widget.bookingData?['dp'] ?? 76500;
+    totalPayment = widget.bookingData?['totalPayment'] ?? 250000;
+    dpAmount = widget.bookingData?['dp'] ?? 125000;
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0D0C11),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildTotalPaymentCard(),
-                    const SizedBox(height: 30),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF190C28), // Sleek deep purple glow
+              Color(0xFF0B090E), // Ultra clean dark black
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              _buildHeader(),
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildTotalPaymentCard(),
+                      const SizedBox(height: 30),
                     
                     _buildSectionTitle("Saved Methods"),
                     const SizedBox(height: 15),
@@ -116,6 +131,7 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
           ],
         ),
       ),
+     ),
       bottomSheet: _buildBottomAction(),
     );
   }
@@ -373,30 +389,93 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
     }
 
     return Container(
-      color: const Color(0xFF0D0C11),
+      color: const Color(0xFF0B090E), // Match the bottom of the gradient background
       padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
+          Container(
             width: double.infinity,
             height: 56,
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [
+                  Color(0xFFFF9DCC),
+                  Color(0xFFFF6B9D),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFFF9DCC).withOpacity(0.3),
+                  blurRadius: 15,
+                  offset: const Offset(0, 5),
+                ),
+              ],
+            ),
             child: ElevatedButton(
-              onPressed: () {
-                // ✅ Navigasi ke halaman tracking driver
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => TrackingDriverScreen(
-                      bookingData: widget.bookingData,
-                      paymentMethod: selectedMethod,
+              onPressed: () async {
+                // Show loading progress dialog
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (context) => const Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF9DCC)),
                     ),
                   ),
                 );
+
+                final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                final userId = authProvider.user?.id;
+                
+                final random = Random();
+                final otpPin = (random.nextInt(9000) + 1000).toString();
+                final bookingDetails = Map<String, dynamic>.from(widget.bookingData ?? {});
+                bookingDetails['otp'] = otpPin;
+
+                String bookingId = 'mock-booking-id';
+                try {
+                  final response = await Supabase.instance.client.from('bookings').insert({
+                    'user_id': userId ?? '33333333-3333-3333-3333-111111111111', 
+                    'driver_id': bookingDetails['driverId'],
+                    'status': 'pending',
+                    'pickup_location': bookingDetails['pickup'],
+                    'dropoff_location': bookingDetails['destination'],
+                    'total_price': bookingDetails['totalPayment'],
+                    'additional_details': bookingDetails,
+                  }).select('id').single();
+                  
+                  bookingId = response['id'] as String;
+                  debugPrint('✅ Booking created in database: $bookingId');
+                } catch (e) {
+                  debugPrint('⚠️ DB insert failed, using mock booking ID. Error: $e');
+                }
+
+                // Close loading dialog
+                if (context.mounted) {
+                  Navigator.pop(context);
+                }
+
+                // ✅ Navigasi ke halaman tracking driver
+                if (context.mounted) {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => TrackingDriverScreen(
+                        bookingData: bookingDetails,
+                        paymentMethod: selectedMethod,
+                        bookingId: bookingId,
+                      ),
+                    ),
+                  );
+                }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFF9DCC),
-                foregroundColor: const Color(0xFF4A1031),
+                backgroundColor: Colors.transparent,
+                shadowColor: Colors.transparent,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(28),
                 ),
@@ -404,7 +483,11 @@ class _PaymentMethodScreenState extends State<PaymentMethodScreen> {
               ),
               child: Text(
                 "Bayar DP ${formatCurrency(dpAmount)}",
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style: const TextStyle(
+                  color: Color(0xFF4A1031),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
             ),
           ),

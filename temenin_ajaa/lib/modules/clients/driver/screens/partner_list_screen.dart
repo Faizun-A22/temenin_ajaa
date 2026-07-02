@@ -1,120 +1,221 @@
 // lib/modules/driver/screens/partner_list_screen.dart
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'package:temenin_ajaa/core/theme/app_theme.dart';
+import 'package:temenin_ajaa/providers/driver_provider.dart';
 import 'partner_profile_screen.dart';
 
-class PartnerListScreen extends StatelessWidget {
+class PartnerListScreen extends StatefulWidget {
   const PartnerListScreen({super.key});
 
   @override
+  State<PartnerListScreen> createState() => _PartnerListScreenState();
+}
+
+class _PartnerListScreenState extends State<PartnerListScreen> {
+  String _activeFilter = 'All';
+  String _activeGenderFilter = 'Semua';
+
+  final List<String> _filters = ['All', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Diamond', 'VVIP'];
+  final List<String> _genderFilters = ['Semua', 'Perempuan', 'Laki-laki'];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<DriverProvider>().fetchDrivers();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF0D0C11),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: const Icon(Icons.arrow_back, color: Color(0xFFFF9DCC)),
-        title: Text(
-          "Temenin Ajaa",
-          style: GoogleFonts.poppins(
-            color: const Color(0xFFFF9DCC),
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: CircleAvatar(
-              radius: 18,
-              backgroundColor: Colors.white.withOpacity(0.1),
-              backgroundImage: const NetworkImage('https://i.pravatar.cc/100?img=12'),
-            ),
-          )
-        ],
+    final driverProvider = context.watch<DriverProvider>();
+    final List<Map<String, dynamic>> drivers = driverProvider.drivers;
+
+    // Filter list by class AND gender
+    final filteredList = drivers.where((partner) {
+      final matchesFilter = _activeFilter == 'All' || partner['type'] == _activeFilter;
+      final matchesGender = _activeGenderFilter == 'Semua' || partner['gender'] == _activeGenderFilter;
+      return matchesFilter && matchesGender;
+    }).toList();
+
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: AppTheme.darkBgGradient,
       ),
-      body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Color(0xFFFF9DCC)),
+            onPressed: () => Navigator.pop(context),
+          ),
+          title: Text(
+            "Temenin Ajaa",
+            style: GoogleFonts.poppins(
+              color: const Color(0xFFFF9DCC),
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: CircleAvatar(
+                radius: 18,
+                backgroundColor: Colors.white.withOpacity(0.1),
+                backgroundImage: const NetworkImage('https://i.pravatar.cc/300?img=32'),
+              ),
+            )
+          ],
+        ),
+        body: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 20),
-            Text(
-              "Available Partners",
-              style: GoogleFonts.poppins(
-                color: Colors.white,
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              "Find the perfect companion for your journey.",
-              style: GoogleFonts.poppins(
-                color: Colors.white.withOpacity(0.5),
-                fontSize: 14,
-              ),
-            ),
-            const SizedBox(height: 25),
-            
-            // Filter Chips
-            SizedBox(
-              height: 40,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildFilterChip("All", isActive: true),
-                  _buildFilterChip("AR"),
-                  _buildFilterChip("DK"),
-                  _buildFilterChip("PR"),
-                  _buildFilterChip("Available"),
+                  const SizedBox(height: 10),
+                  Text(
+                    "Available Partners",
+                    style: GoogleFonts.poppins(
+                      color: Colors.white,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "Temukan partner terbaik sesuai kelas dan kebutuhan Anda.",
+                    style: GoogleFonts.poppins(
+                      color: Colors.white.withOpacity(0.5),
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 15),
+                  
+                  // Filter Chips (Membership Class)
+                  SizedBox(
+                    height: 36,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _filters.length,
+                      itemBuilder: (context, index) {
+                        final filterName = _filters[index];
+                        final isActive = _activeFilter == filterName;
+                        return GestureDetector(
+                          onTap: () => setState(() => _activeFilter = filterName),
+                          child: _buildFilterChip(filterName, isActive: isActive),
+                        );
+                      },
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Gender Preference Toggle
+                  Text(
+                    "Pilihan Gender Mitra:",
+                    style: GoogleFonts.poppins(
+                      color: Colors.white.withOpacity(0.6),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  SizedBox(
+                    height: 36,
+                    child: Row(
+                      children: _genderFilters.map((gender) {
+                        final isActive = _activeGenderFilter == gender;
+                        return GestureDetector(
+                          onTap: () => setState(() => _activeGenderFilter = gender),
+                          child: _buildGenderChip(gender, isActive: isActive),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
                 ],
               ),
             ),
-            const SizedBox(height: 30),
-
-            // Partner List - ✅ Kirim context ke _partnerCard
-            _partnerCard(
-              context: context, // ✅ Kirim context
-              id: 1,
-              name: "Adrian Wijaya",
-              vehicle: "Kawasaki Ninja ZX-25R",
-              rating: "4.9",
-              status: "Available",
-              type: "ELITE",
-              image: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?q=80&w=600",
-              tag: "AR",
-              isAvailable: true,
-              price: 25000,
+            
+            Expanded(
+              child: driverProvider.isLoading
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF9DCC)),
+                      ),
+                    )
+                  : driverProvider.errorMessage != null
+                      ? Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                const Icon(Icons.error_outline, color: Colors.red, size: 40),
+                                const SizedBox(height: 10),
+                                Text(
+                                  driverProvider.errorMessage!,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(color: Colors.white70),
+                                ),
+                                const SizedBox(height: 15),
+                                ElevatedButton(
+                                  onPressed: () => driverProvider.fetchDrivers(),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFFF9DCC),
+                                    foregroundColor: Colors.black,
+                                  ),
+                                  child: const Text("Coba Lagi"),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      : filteredList.isEmpty
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.people_outline, color: Colors.white.withOpacity(0.2), size: 48),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    "Mitra tidak ditemukan",
+                                    style: GoogleFonts.poppins(color: Colors.white30, fontSize: 14),
+                                  ),
+                                ],
+                              ),
+                            )
+                          : ListView.builder(
+                              physics: const BouncingScrollPhysics(),
+                              padding: const EdgeInsets.fromLTRB(20, 10, 20, 40),
+                              itemCount: filteredList.length,
+                              itemBuilder: (context, index) {
+                                final partner = filteredList[index];
+                                return _partnerCard(
+                                  context: context,
+                                  id: partner['id'],
+                                  name: partner['name'],
+                                  vehicle: partner['vehicle'],
+                                  rating: partner['rating'],
+                                  status: partner['status'],
+                                  type: partner['type'],
+                                  image: partner['image'],
+                                  tag: partner['tag'],
+                                  isAvailable: partner['isAvailable'],
+                                  price: partner['price'],
+                                  kpi: partner['kpi'],
+                                  gender: partner['gender'] ?? 'Laki-laki',
+                                );
+                              },
+                            ),
             ),
-            _partnerCard(
-              context: context, // ✅ Kirim context
-              id: 2,
-              name: "Diki Pratama",
-              vehicle: "Honda CBR250RR",
-              rating: "4.7",
-              status: "Booked",
-              type: "PREMIUM",
-              image: "https://images.unsplash.com/photo-1591114002673-8a3064619d00?q=80&w=600",
-              tag: "DK",
-              isAvailable: false,
-              price: 20000,
-            ),
-            _partnerCard(
-              context: context, // ✅ Kirim context
-              id: 3,
-              name: "Putra Ramadhan",
-              vehicle: "Yamaha R15 V4",
-              rating: "5.0",
-              status: "Available",
-              type: "ELITE",
-              image: "https://images.unsplash.com/photo-1614165933026-07521c7a6b8b?q=80&w=600",
-              tag: "PR",
-              isAvailable: true,
-              price: 30000,
-            ),
-            const SizedBox(height: 100),
           ],
         ),
       ),
@@ -123,28 +224,73 @@ class PartnerListScreen extends StatelessWidget {
 
   Widget _buildFilterChip(String label, {bool isActive = false}) {
     return Container(
-      margin: const EdgeInsets.only(right: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      margin: const EdgeInsets.only(right: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      alignment: Alignment.center,
       decoration: BoxDecoration(
         color: isActive ? const Color(0xFFFF9DCC) : const Color(0xFF1C1B21),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: Colors.white.withOpacity(0.05)),
       ),
-      alignment: Alignment.center,
       child: Text(
         label,
         style: GoogleFonts.poppins(
           color: isActive ? Colors.black : Colors.white.withOpacity(0.5),
           fontWeight: FontWeight.bold,
-          fontSize: 13,
+          fontSize: 12,
         ),
       ),
     );
   }
 
+  Widget _buildGenderChip(String label, {bool isActive = false}) {
+    IconData icon = Icons.people_outline;
+    if (label == 'Perempuan') icon = Icons.female_rounded;
+    if (label == 'Laki-laki') icon = Icons.male_rounded;
+
+    return Container(
+      margin: const EdgeInsets.only(right: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        gradient: isActive ? AppTheme.primaryGradient : null,
+        color: isActive ? null : const Color(0xFF1C1B21),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: isActive ? Colors.transparent : Colors.white.withOpacity(0.05)),
+        boxShadow: isActive
+            ? [
+                BoxShadow(
+                  color: const Color(0xFFFF9DCC).withOpacity(0.15),
+                  blurRadius: 6,
+                ),
+              ]
+            : null,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon, 
+            color: isActive ? Colors.black : Colors.white.withOpacity(0.4), 
+            size: 14,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: GoogleFonts.poppins(
+              color: isActive ? Colors.black : Colors.white.withOpacity(0.5),
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _partnerCard({
-    required BuildContext context, // ✅ Tambahkan parameter context
-    required int id,
+    required BuildContext context,
+    required String id,
     required String name,
     required String vehicle,
     required String rating,
@@ -154,17 +300,32 @@ class PartnerListScreen extends StatelessWidget {
     required String tag,
     required bool isAvailable,
     required int price,
+    required int kpi,
+    required String gender,
   }) {
+    Color classColor = const Color(0xFFFF9DCC);
+    if (type == 'VVIP') classColor = const Color(0xFFE5D5FF);
+    if (type == 'Diamond') classColor = const Color(0xFFC4E0E5);
+    if (type == 'Platinum') classColor = const Color(0xFFB3C5FF);
+    if (type == 'Gold') classColor = const Color(0xFFFFDF91);
+    if (type == 'Silver') classColor = const Color(0xFFE8E8E8);
+
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       decoration: BoxDecoration(
-        color: const Color(0xFF16151A),
+        gradient: AppTheme.cardGradient,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: const Color(0xFFFF9DCC).withOpacity(0.06), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.25),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         children: [
-          // Image Header with Overlays
           Stack(
             children: [
               ClipRRect(
@@ -183,41 +344,57 @@ class PartnerListScreen extends StatelessWidget {
                   },
                 ),
               ),
-              // Gradient Overlay for readability
               Positioned.fill(
                 child: Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      colors: [Colors.black.withOpacity(0.2), Colors.transparent, Colors.black.withOpacity(0.6)],
+                      colors: [Colors.black.withOpacity(0.2), Colors.transparent, Colors.black.withOpacity(0.7)],
                     ),
                   ),
                 ),
               ),
-              // Elite/Premium Badge
               Positioned(
                 top: 15,
                 right: 15,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: type == "ELITE" ? const Color(0xFFFFB6D9).withOpacity(0.9) : Colors.white.withOpacity(0.9),
+                    color: classColor.withOpacity(0.95),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
-                    type,
+                    type.toUpperCase(),
                     style: const TextStyle(color: Colors.black, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 1),
                   ),
                 ),
               ),
-              // Rating Badge
+              Positioned(
+                top: 15,
+                left: 15,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F9D58).withOpacity(0.85),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.white24),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.verified_user_rounded, color: Colors.white, size: 10),
+                      SizedBox(width: 4),
+                      Text("VERIFIED", style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ),
+              ),
               Positioned(
                 bottom: 15,
                 left: 15,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(color: Colors.black45, borderRadius: BorderRadius.circular(8)),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(8)),
                   child: Row(
                     children: [
                       const Icon(Icons.star, color: Color(0xFFFF9DCC), size: 14),
@@ -230,7 +407,6 @@ class PartnerListScreen extends StatelessWidget {
             ],
           ),
           
-          // Info Section
           Padding(
             padding: const EdgeInsets.all(20.0),
             child: Column(
@@ -241,7 +417,20 @@ class PartnerListScreen extends StatelessWidget {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(name, style: GoogleFonts.poppins(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
+                        Row(
+                          children: [
+                            Text(
+                              name, 
+                              style: GoogleFonts.poppins(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(width: 8),
+                            Icon(
+                              gender == 'Perempuan' ? Icons.female_rounded : Icons.male_rounded,
+                              color: gender == 'Perempuan' ? const Color(0xFFFF9DCC) : Colors.blueAccent,
+                              size: 18,
+                            ),
+                          ],
+                        ),
                         const SizedBox(height: 4),
                         Row(
                           children: [
@@ -270,25 +459,29 @@ class PartnerListScreen extends StatelessWidget {
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
+                const SizedBox(height: 15),
                 const Divider(color: Colors.white10),
                 const SizedBox(height: 10),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFF9DCC).withOpacity(0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(tag, style: const TextStyle(color: Color(0xFFFF9DCC), fontSize: 8, fontWeight: FontWeight.bold)),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            "KPI: $kpi%",
+                            style: GoogleFonts.poppins(color: const Color(0xFFFF9DCC), fontSize: 10, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
                     ),
                     ElevatedButton(
                       onPressed: isAvailable ? () {
-                        // ✅ Navigasi ke PartnerProfileScreen
                         Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -301,7 +494,7 @@ class PartnerListScreen extends StatelessWidget {
                                 'status': status,
                                 'type': type,
                                 'image': image,
-                                'tag': tag,
+                                'tag': type,
                                 'isAvailable': isAvailable,
                                 'price': price,
                               },

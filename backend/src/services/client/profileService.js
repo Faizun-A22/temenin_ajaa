@@ -1,4 +1,4 @@
-const db = require('../../config/supabase');
+const { supabase, supabaseAdmin } = require('../../config/supabase');
 const fs = require('fs').promises;
 const path = require('path');
 const sharp = require('sharp');
@@ -9,194 +9,177 @@ class ProfileService {
    */
   async getUserProfile(userId) {
     try {
-      const query = `
-        SELECT 
-          id, 
-          email, 
-          full_name, 
-          phone, 
-          avatar_url,
-          balance,
-          points,
-          is_verified,
-          created_at,
-          updated_at
-        FROM users 
-        WHERE id = $1
-      `;
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('id, email, full_name, phone, avatar_url, balance, points, is_verified, created_at, updated_at')
+        .eq('id', userId)
+        .maybeSingle();
       
-      const result = await db.query(query, [userId]);
-      
-      if (result.rows.length === 0) {
+      if (userError) throw userError;
+      if (!user) {
         throw new Error('User not found');
       }
       
       // Get user statistics
-      const statsQuery = `
-        SELECT 
-          COUNT(*) as total_bookings,
-          COUNT(CASE WHEN status = 'ongoing' THEN 1 END) as ongoing_bookings,
-          COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_bookings
-        FROM bookings 
-        WHERE user_id = $1
-      `;
+      const { data: bookings, error: bookingsError } = await supabase
+        .from('bookings')
+        .select('status')
+        .eq('user_id', userId);
       
-      const statsResult = await db.query(statsQuery, [userId]);
+      if (bookingsError) throw bookingsError;
+      
+      const total_bookings = bookings ? bookings.length : 0;
+      const ongoing_bookings = bookings ? bookings.filter(b => b.status === 'ongoing').length : 0;
+      const completed_bookings = bookings ? bookings.filter(b => b.status === 'completed').length : 0;
       
       return {
-        ...result.rows[0],
-        stats: statsResult.rows[0]
+        ...user,
+        stats: {
+          total_bookings,
+          ongoing_bookings,
+          completed_bookings
+        }
       };
     } catch (error) {
       throw error;
     }
   }
 
- // backend/src/services/client/profileService.js
+  /**
+   * Update user profile
+   */
+  async updateUserProfile(userId, updateData) {
+    try {
+      const { full_name, phone } = updateData;
+      const updateObj = {};
 
-async updateUserProfile(userId, updateData) {
-  try {
-    const { full_name, phone } = updateData;
-    const updates = [];
-    const values = [];
-    let paramCount = 1;
+      if (full_name !== undefined && full_name !== null && full_name !== '') {
+        updateObj.full_name = full_name;
+        console.log('📝 Updating full_name:', full_name);
+      }
+      
+      if (phone !== undefined && phone !== null && phone !== '') {
+        updateObj.phone = phone;
+        console.log('📱 Updating phone:', phone);
+      }
 
-    // PERBAIKI: Hanya tambahkan ke updates jika field ada (bukan undefined)
-    if (full_name !== undefined && full_name !== null && full_name !== '') {
-      updates.push(`full_name = $${paramCount++}`);
-      values.push(full_name);
-      console.log('📝 Updating full_name:', full_name);
+      if (Object.keys(updateObj).length === 0) {
+        console.log('⚠️ No fields to update, returning current user');
+        const { data: currentUser, error: getError } = await supabase
+          .from('users')
+          .select('id, email, full_name, phone, avatar_url, balance, points, is_verified')
+          .eq('id', userId)
+          .maybeSingle();
+        if (getError) throw getError;
+        if (!currentUser) {
+          throw new Error('User not found');
+        }
+        return currentUser;
+      }
+
+      updateObj.updated_at = new Date();
+
+      const { data: updatedUser, error: updateError } = await supabase
+        .from('users')
+        .update(updateObj)
+        .eq('id', userId)
+        .select('id, email, full_name, phone, avatar_url, balance, points, is_verified')
+        .single();
+      
+      if (updateError) throw updateError;
+      return updatedUser;
+    } catch (error) {
+      console.error('Update profile error:', error);
+      throw error;
     }
-    
-    if (phone !== undefined && phone !== null && phone !== '') {
-      updates.push(`phone = $${paramCount++}`);
-      values.push(phone);
-      console.log('📱 Updating phone:', phone);
-    }
+  }
 
-    // TAMBAHKAN: Jika tidak ada data yang diupdate, return current user data
-    if (updates.length === 0) {
-      console.log('⚠️ No fields to update, returning current user');
-      // Ambil data user saat ini
-      const currentUser = await db.query(
-        'SELECT id, email, full_name, phone, avatar_url, balance, points, is_verified FROM users WHERE id = $1',
-        [userId]
-      );
-      if (currentUser.rows.length === 0) {
+  /**
+   * Update avatar
+   */
+  async updateAvatar(userId, file) {
+    try {
+      console.log('🖼️ Starting avatar upload for user:', userId);
+      
+      if (!file) {
+        throw new Error('No file uploaded');
+      }
+
+      // Get current user data to delete old avatar
+      const { data: currentUser, error: getError } = await supabase
+        .from('users')
+        .select('avatar_url')
+        .eq('id', userId)
+        .maybeSingle();
+
+      if (getError) throw getError;
+      if (!currentUser) {
         throw new Error('User not found');
       }
-      return currentUser.rows[0];
-    }
 
-    updates.push(`updated_at = NOW()`);
-    values.push(userId);
+      // Pastikan direktori uploads/avatars ada
+      const uploadDir = path.join(__dirname, '../../../uploads/avatars');
+      try {
+        await fs.access(uploadDir);
+      } catch (error) {
+        console.log('📁 Creating uploads directory...');
+        await fs.mkdir(uploadDir, { recursive: true });
+      }
 
-    const query = `
-      UPDATE users 
-      SET ${updates.join(', ')}
-      WHERE id = $${paramCount}
-      RETURNING id, email, full_name, phone, avatar_url, balance, points, is_verified
-    `;
-    
-    console.log('📝 Update query:', query);
-    console.log('📝 Values:', values);
-    
-    const result = await db.query(query, values);
-    
-    if (result.rows.length === 0) {
-      throw new Error('User not found');
-    }
-    
-    return result.rows[0];
-  } catch (error) {
-    console.error('Update profile error:', error);
-    throw error;
-  }
-}
+      // Process image with Sharp
+      const processedFilename = `avatar-${Date.now()}-${userId}.webp`;
+      const processedPath = path.join(uploadDir, processedFilename);
+      
+      await sharp(file.path)
+        .resize(400, 400, {
+          fit: 'cover',
+          position: 'center'
+        })
+        .webp({ quality: 80 })
+        .toFile(processedPath);
 
-// backend/src/services/client/profileService.js
+      // Delete old avatar file
+      const oldAvatarUrl = currentUser.avatar_url;
+      if (oldAvatarUrl) {
+        const oldFilename = oldAvatarUrl.split('/').pop();
+        const oldPath = path.join(uploadDir, oldFilename);
+        try {
+          await fs.unlink(oldPath);
+        } catch (err) {
+          console.log('Old avatar not found:', err.message);
+        }
+      }
 
-async updateAvatar(userId, file) {
-  try {
-    console.log('🖼️ Starting avatar upload for user:', userId);
-    
-    if (!file) {
-      throw new Error('No file uploaded');
-    }
+      // Delete temporary file
+      await fs.unlink(file.path);
 
-    // Get current user data to delete old avatar
-    const currentUser = await db.query(
-      'SELECT avatar_url FROM users WHERE id = $1',
-      [userId]
-    );
+      // Buat URL lengkap dengan BASE_URL
+      const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1:3000';
+      const avatarUrl = `${BASE_URL}/uploads/avatars/${processedFilename}`;
+      
+      console.log('📸 Avatar URL:', avatarUrl);
 
-    if (currentUser.rows.length === 0) {
-      throw new Error('User not found');
-    }
+      // Update database
+      const { data: updatedUser, error: updateError } = await supabase
+        .from('users')
+        .update({ avatar_url: avatarUrl, updated_at: new Date() })
+        .eq('id', userId)
+        .select('id, email, full_name, avatar_url')
+        .single();
 
-    // Pastikan direktori uploads/avatars ada
-    const uploadDir = path.join(__dirname, '../../../uploads/avatars');
-    try {
-      await fs.access(uploadDir);
+      if (updateError) throw updateError;
+      return updatedUser;
     } catch (error) {
-      console.log('📁 Creating uploads directory...');
-      await fs.mkdir(uploadDir, { recursive: true });
-    }
-
-    // Process image with Sharp
-    const processedFilename = `avatar-${Date.now()}-${userId}.webp`;
-    const processedPath = path.join(uploadDir, processedFilename);
-    
-    await sharp(file.path)
-      .resize(400, 400, {
-        fit: 'cover',
-        position: 'center'
-      })
-      .webp({ quality: 80 })
-      .toFile(processedPath);
-
-    // Delete old avatar file
-    const oldAvatarUrl = currentUser.rows[0].avatar_url;
-    if (oldAvatarUrl) {
-      const oldFilename = oldAvatarUrl.split('/').pop();
-      const oldPath = path.join(uploadDir, oldFilename);
-      try {
-        await fs.unlink(oldPath);
-      } catch (err) {
-        console.log('Old avatar not found:', err.message);
+      if (file && file.path) {
+        try {
+          await fs.unlink(file.path);
+        } catch (err) {
+          console.log('Error deleting temp file:', err.message);
+        }
       }
+      throw error;
     }
-
-    // Delete temporary file
-    await fs.unlink(file.path);
-
-    // 🔴 PERBAIKI: Buat URL lengkap dengan BASE_URL
-    const BASE_URL = process.env.BASE_URL || 'http://192.168.1.6:3000';
-    const avatarUrl = `${BASE_URL}/uploads/avatars/${processedFilename}`;
-    
-    console.log('📸 Avatar URL:', avatarUrl);
-
-    // Update database
-    const result = await db.query(
-      `UPDATE users 
-       SET avatar_url = $1, updated_at = NOW() 
-       WHERE id = $2 
-       RETURNING id, email, full_name, avatar_url`,
-      [avatarUrl, userId]
-    );
-
-    return result.rows[0];
-  } catch (error) {
-    if (file && file.path) {
-      try {
-        await fs.unlink(file.path);
-      } catch (err) {
-        console.log('Error deleting temp file:', err.message);
-      }
-    }
-    throw error;
   }
-}
 
   /**
    * Delete avatar
@@ -204,16 +187,18 @@ async updateAvatar(userId, file) {
   async deleteAvatar(userId) {
     try {
       // Get current user data
-      const currentUser = await db.query(
-        'SELECT avatar_url FROM users WHERE id = $1',
-        [userId]
-      );
+      const { data: currentUser, error: getError } = await supabase
+        .from('users')
+        .select('avatar_url')
+        .eq('id', userId)
+        .maybeSingle();
 
-      if (currentUser.rows.length === 0) {
+      if (getError) throw getError;
+      if (!currentUser) {
         throw new Error('User not found');
       }
 
-      const avatarUrl = currentUser.rows[0].avatar_url;
+      const avatarUrl = currentUser.avatar_url;
       
       if (avatarUrl) {
         // Delete file from filesystem
@@ -227,15 +212,15 @@ async updateAvatar(userId, file) {
       }
 
       // Update database
-      const result = await db.query(
-        `UPDATE users 
-         SET avatar_url = NULL, updated_at = NOW() 
-         WHERE id = $1 
-         RETURNING id, email, full_name, avatar_url`,
-        [userId]
-      );
+      const { data: updatedUser, error: updateError } = await supabase
+        .from('users')
+        .update({ avatar_url: null, updated_at: new Date() })
+        .eq('id', userId)
+        .select('id, email, full_name, avatar_url')
+        .single();
 
-      return result.rows[0];
+      if (updateError) throw updateError;
+      return updatedUser;
     } catch (error) {
       throw error;
     }
@@ -246,32 +231,37 @@ async updateAvatar(userId, file) {
    */
   async changePassword(userId, oldPassword, newPassword) {
     try {
-      const bcrypt = require('bcrypt');
+      const bcrypt = require('bcryptjs');
       
       // Get current user with password
-      const user = await db.query(
-        'SELECT password_hash FROM users WHERE id = $1',
-        [userId]
-      );
+      const { data: user, error: getError } = await supabase
+        .from('users')
+        .select('password_hash')
+        .eq('id', userId)
+        .maybeSingle();
 
-      if (user.rows.length === 0) {
+      if (getError) throw getError;
+      if (!user) {
         throw new Error('User not found');
       }
 
       // Verify old password
-      const isValid = await bcrypt.compare(oldPassword, user.rows[0].password_hash);
+      const isValid = await bcrypt.compare(oldPassword, user.password_hash);
       if (!isValid) {
         throw new Error('Current password is incorrect');
       }
 
       // Hash new password
-      const hashedPassword = await bcrypt.hash(newPassword, 10);
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(newPassword, salt);
 
       // Update password
-      await db.query(
-        'UPDATE users SET password_hash = $1, updated_at = NOW() WHERE id = $2',
-        [hashedPassword, userId]
-      );
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ password_hash: hashedPassword, updated_at: new Date() })
+        .eq('id', userId);
+
+      if (updateError) throw updateError;
 
       return { message: 'Password updated successfully' };
     } catch (error) {
@@ -284,29 +274,49 @@ async updateAvatar(userId, file) {
    */
   async getBookingHistory(userId, status = null) {
     try {
-      let query = `
-        SELECT 
-          b.*,
-          d.vehicle_name,
-          d.vehicle_type,
-          d.plate_number,
-          d.price_per_hour
-        FROM bookings b
-        LEFT JOIN drivers d ON b.driver_id = d.id
-        WHERE b.user_id = $1
-      `;
-      
-      const values = [userId];
+      let queryBuilder = supabase
+        .from('bookings')
+        .select(`
+          *,
+          drivers (
+            id,
+            vehicle_name,
+            vehicle_type,
+            plate_number,
+            price_per_hour,
+            rating
+          )
+        `)
+        .eq('user_id', userId);
       
       if (status) {
-        query += ` AND b.status = $2`;
-        values.push(status);
+        queryBuilder = queryBuilder.eq('status', status);
       }
       
-      query += ` ORDER BY b.created_at DESC`;
+      const { data: bookings, error: bookingsError } = await queryBuilder.order('created_at', { ascending: false });
       
-      const result = await db.query(query, values);
-      return result.rows;
+      if (bookingsError) throw bookingsError;
+      
+      // Flat-map drivers properties to maintain backward compatibility with old join structure,
+      // and also add nested 'driver' object for BookingModel compatibility in Flutter Client.
+      return bookings.map(b => {
+        const { drivers, ...bookingData } = b;
+        return {
+          ...bookingData,
+          vehicle_name: drivers?.vehicle_name || null,
+          vehicle_type: drivers?.vehicle_type || null,
+          plate_number: drivers?.plate_number || null,
+          price_per_hour: drivers?.price_per_hour || null,
+          driver: drivers ? {
+            id: drivers.id,
+            vehicle_name: drivers.vehicle_name,
+            vehicle_type: drivers.vehicle_type,
+            plate_number: drivers.plate_number,
+            price_per_hour: drivers.price_per_hour,
+            rating: drivers.rating ? parseFloat(drivers.rating) : 5.0
+          } : null
+        };
+      });
     } catch (error) {
       throw error;
     }

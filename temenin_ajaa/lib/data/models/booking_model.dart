@@ -46,8 +46,8 @@ class BookingModel {
       pickupLongitude: json['pickup_longitude']?.toDouble(),
       dropoffLatitude: json['dropoff_latitude']?.toDouble(),
       dropoffLongitude: json['dropoff_longitude']?.toDouble(),
-      duration: json['duration'],
-      totalPrice: json['total_price'],
+      duration: (json['duration'] as num?)?.toInt(),
+      totalPrice: (json['total_price'] as num?)?.toInt(),
       bookingDate: json['booking_date'] != null 
           ? DateTime.parse(json['booking_date']) 
           : null,
@@ -103,7 +103,7 @@ class DriverModel {
       vehicleName: json['vehicle_name'],
       vehicleType: json['vehicle_type'],
       plateNumber: json['plate_number'],
-      pricePerHour: json['price_per_hour'],
+      pricePerHour: (json['price_per_hour'] as num?)?.toInt(),
       rating: json['rating']?.toDouble(),
     );
   }

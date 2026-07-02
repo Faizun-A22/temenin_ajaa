@@ -1,7 +1,6 @@
 // Path: constants\api_constants.dart
 class ApiConstants {
-  // Gunakan IP yang sudah terbukti berhasil
-  static const String baseUrl = 'http://192.168.1.6:3000';
+  static const String baseUrl = 'http://192.168.1.21:3000';
 
   
   // Auth Endpoints
@@ -74,6 +73,12 @@ class ApiConstants {
   static const String markNotificationRead = '/api/notifications/mark-read';
   static const String deleteNotification = '/api/notifications/delete';
   static const String notificationSettings = '/api/notifications/settings';
+
+  static const String driverRegister = '$baseUrl/api/drivers/register';
+  static const String driverProfile = '$baseUrl/api/drivers/profile';
+  static const String driverStatus = '$baseUrl/api/drivers/status';
+  static const String driverBookings = '$baseUrl/api/drivers/bookings';
+  static const String driverEarnings = '$baseUrl/api/drivers/earnings';
   
   // Headers
   static const String contentType = 'application/json';
