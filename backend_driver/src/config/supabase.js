@@ -10,26 +10,26 @@ if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('SUPABASE_URL and SUPABASE_ANON_KEY must be provided in .env');
 }
 
-// Compatible options for Node.js < 22 WebSocket
-let options = {
-  auth: {
-    persistSession: false
-  }
-};
+// Polyfill WebSocket globally for Node.js < 22 Supabase compatibility
 try {
-  const ws = require('ws');
-  options.realtime = {
-    transport: ws
-  };
+  global.WebSocket = require('ws');
 } catch (e) {
-  // ws not installed or not supported, fall back
+  // ws not installed yet
 }
 
 // Client for general operations (uses service key if available to bypass RLS in backend)
-const supabase = createClient(supabaseUrl, supabaseServiceKey || supabaseAnonKey, options);
+const supabase = createClient(supabaseUrl, supabaseServiceKey || supabaseAnonKey, {
+  auth: {
+    persistSession: false
+  }
+});
 
 // Admin client for special administrative operations
-const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey || supabaseAnonKey, options);
+const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey || supabaseAnonKey, {
+  auth: {
+    persistSession: false
+  }
+});
 
 module.exports = {
   supabase,

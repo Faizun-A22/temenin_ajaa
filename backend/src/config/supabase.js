@@ -3,37 +3,37 @@
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config();
 
+// Polyfill WebSocket globally for Node.js < 22 Supabase compatibility
+try {
+  global.WebSocket = require('ws');
+} catch (e) {
+  // ws not installed yet
+}
+
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-// Compatible options for Node.js < 22 WebSocket
-let options = {
-  auth: {
-    persistSession: false
-  }
-};
-try {
-  const ws = require('ws');
-  options.realtime = {
-    transport: ws
-  };
-} catch (e) {
-  // ws not installed or not supported, fall back
-}
 
 // Client untuk operasi umum
 const supabase = createClient(
   supabaseUrl,
   supabaseAnonKey,
-  options
+  {
+    auth: {
+      persistSession: false
+    }
+  }
 );
 
 // Client admin untuk operasi khusus
 const supabaseAdmin = createClient(
   supabaseUrl,
   supabaseServiceKey,
-  options
+  {
+    auth: {
+      persistSession: false
+    }
+  }
 );
 
 // 🔴 TAMBAHKAN: Fungsi query wrapper untuk kompatibilitas
