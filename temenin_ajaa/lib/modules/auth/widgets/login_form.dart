@@ -47,7 +47,7 @@ class _LoginFormState extends State<LoginForm> {
     
     // Navigate to home
     if (mounted) {
-      context.go(AppRoutes.home);
+      context.go(AppRoutes.clientHome);
     }
   }
 

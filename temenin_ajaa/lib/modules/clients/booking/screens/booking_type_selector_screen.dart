@@ -3,9 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'antar_jemput_booking_screen.dart';
 import 'hangout_booking_screen.dart';
-// Import halaman booking selanjutnya
-// import 'antar_jemput_booking_screen.dart';
-// import 'hangout_booking_screen.dart';
+import 'freedom_request_booking_screen.dart';
 
 class BookingTypeSelectorScreen extends StatefulWidget {
   const BookingTypeSelectorScreen({super.key});
@@ -23,7 +21,7 @@ class _BookingTypeSelectorScreenState extends State<BookingTypeSelectorScreen> {
       title: "Antar Jemput",
       subtitle: "Perjalanan dari titik A ke B dengan driver profesional",
       icon: Icons.car_rental_rounded,
-      gradientColors: [const Color(0xFFFF9DCC), const Color(0xFFFF6B9D)],
+      gradientColors: [const Color(0xFFFF9DCC), const Color(0xFFFF5EA2)],
       lightColor: const Color(0xFFFF9DCC),
       darkColor: const Color(0xFF4A1031),
     ),
@@ -32,14 +30,20 @@ class _BookingTypeSelectorScreenState extends State<BookingTypeSelectorScreen> {
       title: "Hangout Partner",
       subtitle: "Temani harimu, dari ngopi, jalan-jalan, sampai acara khusus",
       icon: Icons.people_alt_rounded,
-      gradientColors: [const Color(0xFF9D6BFF), const Color(0xFF7C3AED)],
+      gradientColors: [const Color(0xFFFF9DCC), const Color(0xFF9D6BFF)],
       lightColor: const Color(0xFF9D6BFF),
       darkColor: const Color(0xFF2D1B4E),
     ),
+    BookingType(
+      id: 2,
+      title: "Freedom Request",
+      subtitle: "Minta tolong apa saja (antre tiket, belanja, dll) secara bebas",
+      icon: Icons.explore_rounded,
+      gradientColors: [const Color(0xFFFF9DCC), const Color(0xFFFF8552)],
+      lightColor: const Color(0xFFFF8552),
+      darkColor: const Color(0xFF4A1B10),
+    ),
   ];
-
-  // lib/modules/booking/screens/booking_type_selector_screen.dart
-// Update bagian _handleBooking() method:
 
 void _handleBooking() {
   if (_selectedIndex == null) return;
@@ -47,19 +51,24 @@ void _handleBooking() {
   final selectedType = _bookingTypes[_selectedIndex!];
 
   if (selectedType.title == "Antar Jemput") {
-    // ✅ Navigasi ke halaman antar jemput
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => const AntarJemputBookingScreen(),
       ),
     );
-  } else {
-    // ✅ Navigasi ke halaman hangout booking
+  } else if (selectedType.title == "Hangout Partner") {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => const HangoutBookingScreen(),
+      ),
+    );
+  } else {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const FreedomRequestBookingScreen(),
       ),
     );
   }
@@ -69,45 +78,57 @@ void _handleBooking() {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF0D0C11),
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 20),
-                    _buildTitleSection(),
-                    const SizedBox(height: 30),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF190C28), // Sleek deep purple glow
+              Color(0xFF0B090E), // Ultra clean dark black
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              _buildHeader(),
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 20),
+                      _buildTitleSection(),
+                      const SizedBox(height: 30),
 
-                    // Booking Type Cards
-                    ...List.generate(_bookingTypes.length, (index) {
-                      final type = _bookingTypes[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 20),
-                        child: _buildBookingCard(
-                          type: type,
-                          isSelected: _selectedIndex == index,
-                          onTap: () => setState(() => _selectedIndex = index),
-                        ),
-                      );
-                    }),
+                      // Booking Type Cards
+                      ...List.generate(_bookingTypes.length, (index) {
+                        final type = _bookingTypes[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 20),
+                          child: _buildBookingCard(
+                            type: type,
+                            isSelected: _selectedIndex == index,
+                            onTap: () => setState(() => _selectedIndex = index),
+                          ),
+                        );
+                      }),
 
-                    const SizedBox(height: 40),
+                      const SizedBox(height: 40),
 
-                    // Primary Action Button
-                    _buildContinueButton(),
+                      // Primary Action Button
+                      _buildContinueButton(),
 
-                    const SizedBox(height: 40),
-                  ],
+                      const SizedBox(height: 40),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

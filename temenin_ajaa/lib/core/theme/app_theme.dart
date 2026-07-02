@@ -11,6 +11,52 @@ class AppTheme {
   static const Color textLight = Color(0xFFE5E2E1);
   static const Color textMuted = Color(0xFFC4C7C7);
   static const Color textMutedLight = Color(0x66C4C7C7);
+
+  // Premium Gradients for refined aesthetics
+  static const LinearGradient darkBgGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      Color(0xFF0F0B18), // Twilight purple glow
+      Color(0xFF0A090D), // Midnight black
+    ],
+  );
+
+  static const LinearGradient primaryGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFFFF7EB3), // Soft elegant rose
+      Color(0xFFBF75FF), // Orchid purple
+    ],
+  );
+
+  static const LinearGradient cardGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFF1C1A24), // Obsidian purple
+      Color(0xFF131218), // Deep charcoal
+    ],
+  );
+
+  static const LinearGradient safetyGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFF4A122E), // Velvet deep maroon
+      Color(0xFF2B0A1A), // Dark safety wine
+    ],
+  );
+
+  static const LinearGradient accentGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [
+      Color(0xFFFFB0D0),
+      Color(0xFFFFA26B), // Rose gold
+    ],
+  );
   
   static ThemeData get lightTheme {
     return ThemeData(

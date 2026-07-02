@@ -3,9 +3,10 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:temenin_ajaa/core/constants/api_constants.dart';
 import 'package:temenin_ajaa/modules/clients/pages/payment_methods_page.dart';
 
-const String BASE_URL = 'http://192.168.1.6:3000';
+const String BASE_URL = ApiConstants.baseUrl;
 
 class PaymentService {
   Future<Map<String, dynamic>> getPaymentMethods(String userId) async {

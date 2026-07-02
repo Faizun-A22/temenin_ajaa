@@ -8,6 +8,7 @@ class UserModel {
   final int balance;
   final int points;
   final bool isVerified;
+  final String? role;
   final DateTime? createdAt;
   final Map<String, dynamic>? stats;
 
@@ -20,6 +21,7 @@ class UserModel {
     this.balance = 0,
     this.points = 0,
     this.isVerified = false,
+    this.role,
     this.createdAt,
     this.stats, 
   });
@@ -31,9 +33,10 @@ class UserModel {
       fullName: json['full_name'],
       phone: json['phone'],
       avatarUrl: json['avatar_url'],
-      balance: json['balance'] ?? 0,
-      points: json['points'] ?? 0,
+      balance: (json['balance'] as num?)?.toInt() ?? 0,
+      points: (json['points'] as num?)?.toInt() ?? 0,
       isVerified: json['is_verified'] ?? false,
+      role: json['role'] as String? ?? 'user',
       createdAt: json['created_at'] != null 
           ? DateTime.parse(json['created_at']) 
           : null, 
@@ -56,6 +59,7 @@ class UserModel {
       'balance': balance,
       'points': points,
       'is_verified': isVerified,
+      'role': role,
       'created_at': createdAt?.toIso8601String(),
       'stats': stats, 
     };
@@ -69,6 +73,7 @@ UserModel copyWith({
     int? balance,
     int? points,
     bool? isVerified,
+    String? role,
     DateTime? createdAt,
     Map<String, dynamic>? stats,
   }) {
@@ -81,6 +86,7 @@ UserModel copyWith({
       balance: balance ?? this.balance,
       points: points ?? this.points,
       isVerified: isVerified ?? this.isVerified,
+      role: role ?? this.role,
       createdAt: createdAt ?? this.createdAt,
       stats: stats ?? this.stats, 
     );

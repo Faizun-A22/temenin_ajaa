@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:temenin_ajaa/core/theme/app_theme.dart';
 import 'package:temenin_ajaa/modules/clients/driver/screens/partner_list_screen.dart';
 import 'package:temenin_ajaa/modules/clients/driver/screens/partner_profile_screen.dart';
 import 'package:temenin_ajaa/modules/clients/chat/screens/chat_list_screen.dart';
 import 'package:temenin_ajaa/modules/clients/booking/screens/booking_type_selector_screen.dart';
+import 'package:temenin_ajaa/modules/clients/booking/screens/tracking_driver_screen.dart';
 import '../widgets/bottom_nav_bar.dart';
 import '../widgets/profile_tab.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/auth_provider.dart';
+import 'package:temenin_ajaa/providers/driver_provider.dart';
 
 class HomeLoggedInScreen extends StatefulWidget {
   const HomeLoggedInScreen({super.key});
@@ -52,19 +55,351 @@ class NewHomeContent extends StatefulWidget {
 }
 
 class _NewHomeContentState extends State<NewHomeContent> {
-  void _navigateToPartnerProfile(BuildContext context, String name, String img, String rate, bool isElite) {
+  String _emergencyContact = '+62 811-9999-110';
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<DriverProvider>().fetchDrivers();
+    });
+  }
+
+  void _showEmergencyContactDialog() {
+    final controller = TextEditingController(text: _emergencyContact);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF1C1A24),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text(
+          "Atur Kontak Darurat",
+          style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              "Nomor ini akan dihubungi otomatis jika Anda memicu tombol SOS darurat.",
+              style: GoogleFonts.poppins(color: Colors.white70, fontSize: 12),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              style: const TextStyle(color: Colors.white),
+              keyboardType: TextInputType.phone,
+              decoration: InputDecoration(
+                filled: true,
+                fillColor: const Color(0xFF131218),
+                labelText: "Nomor Telepon",
+                labelStyle: const TextStyle(color: Color(0xFFFF9DCC)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: const BorderSide(color: Colors.white12),
+                ),
+                prefixIcon: const Icon(Icons.phone, color: Color(0xFFFF9DCC)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text("Batal", style: TextStyle(color: Colors.white.withOpacity(0.5))),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                _emergencyContact = controller.text;
+              });
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Kontak Darurat berhasil diperbarui ke: $_emergencyContact'),
+                  backgroundColor: const Color(0xFF8E2B5F),
+                ),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFF9DCC),
+              foregroundColor: Colors.black,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text("Simpan", style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showSOSDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF3D1625),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Color(0xFFFF4DA6)),
+            const SizedBox(width: 10),
+            Text(
+              "SOS Terpicu",
+              style: GoogleFonts.poppins(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Text(
+          "Menghubungi Pusat Keamanan dan mengirim pesan darurat ke kontak darurat Anda ($_emergencyContact)...\n\nTim Keamanan kami akan segera menghubungi Anda.",
+          style: GoogleFonts.poppins(color: Colors.white, fontSize: 13),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: const Color(0xFF3D1625),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text("Batalkan SOS", style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _shareLocation() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Tautan pelacakan perjalanan langsung dibagikan ke kontak darurat!'),
+        backgroundColor: Color(0xFF8E2B5F),
+        duration: Duration(seconds: 3),
+      ),
+    );
+  }
+
+  Widget _buildSafetyHubCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: AppTheme.safetyGradient,
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFFF4DA6).withOpacity(0.2), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF4A122E).withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.shield_rounded, color: Color(0xFFFF9DCC), size: 20),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                "Safety & Protection Shield",
+                style: GoogleFonts.poppins(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            "Perjalanan Anda dilindungi enkripsi, pelacakan live admin, dan validasi latar belakang ketat untuk kenyamanan Anda.",
+            style: GoogleFonts.poppins(
+              color: Colors.white.withOpacity(0.7),
+              fontSize: 11,
+              height: 1.4,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: InkWell(
+                  onTap: _showSOSDialog,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFF4DA6).withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFFF4DA6).withOpacity(0.3)),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.call, color: Color(0xFFFF4DA6), size: 14),
+                        SizedBox(width: 6),
+                        Text(
+                          "Panggil SOS",
+                          style: TextStyle(color: Color(0xFFFF4DA6), fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: InkWell(
+                  onTap: _shareLocation,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white.withOpacity(0.1)),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.share_location_rounded, color: Colors.white, size: 14),
+                        SizedBox(width: 6),
+                        Text(
+                          "Bagikan Rute",
+                          style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: InkWell(
+                  onTap: _showEmergencyContactDialog,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 10),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white.withOpacity(0.1)),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.contact_phone_rounded, color: Colors.white, size: 14),
+                        SizedBox(width: 6),
+                        Text(
+                          "Set Kontak",
+                          style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _navigateToPartnerProfile(BuildContext context, String name, String img, String rate, String driverClass, [Map<String, dynamic>? partnerData]) {
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => PartnerProfileScreen(
-          partnerData: {
+          partnerData: partnerData ?? {
             'name': name,
             'image': img,
             'rating': rate,
-            'tag': isElite ? 'ELITE' : 'REGULAR',
+            'tag': driverClass,
+            'price': driverClass == 'VVIP' ? 200000 : (driverClass == 'Gold' ? 70000 : 40000),
           },
         ),
       ),
+    );
+  }
+
+  Widget _buildLiveDriversSection() {
+    final driverProvider = context.watch<DriverProvider>();
+    final liveDrivers = driverProvider.drivers;
+
+    if (driverProvider.isLoading) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20.0),
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFF9DCC)),
+          ),
+        ),
+      );
+    }
+
+    if (liveDrivers.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20.0),
+          child: Text(
+            "Tidak ada driver aktif saat ini",
+            style: GoogleFonts.poppins(color: Colors.white30, fontSize: 13),
+          ),
+        ),
+      );
+    }
+
+    return Row(
+      children: [
+        Expanded(
+          child: GestureDetector(
+            onTap: () => _navigateToPartnerProfile(
+              context,
+              liveDrivers[0]['name'],
+              liveDrivers[0]['image'],
+              liveDrivers[0]['rating'],
+              liveDrivers[0]['type'],
+              liveDrivers[0],
+            ),
+            child: _buildPartnerCard(
+              liveDrivers[0]['image'],
+              liveDrivers[0]['name'],
+              liveDrivers[0]['rating'],
+              liveDrivers[0]['type'],
+            ),
+          ),
+        ),
+        const SizedBox(width: 15),
+        Expanded(
+          child: liveDrivers.length > 1
+              ? GestureDetector(
+                  onTap: () => _navigateToPartnerProfile(
+                    context,
+                    liveDrivers[1]['name'],
+                    liveDrivers[1]['image'],
+                    liveDrivers[1]['rating'],
+                    liveDrivers[1]['type'],
+                    liveDrivers[1],
+                  ),
+                  child: _buildPartnerCard(
+                    liveDrivers[1]['image'],
+                    liveDrivers[1]['name'],
+                    liveDrivers[1]['rating'],
+                    liveDrivers[1]['type'],
+                  ),
+                )
+              : const SizedBox(),
+        ),
+      ],
     );
   }
 
@@ -110,12 +445,16 @@ class _NewHomeContentState extends State<NewHomeContent> {
     final formattedPoints = authProvider.getFormattedPoints();
     final points = user?.points ?? 0;
     
-    return SafeArea(
-      child: RefreshIndicator(
-        onRefresh: () async {
-          await authProvider.refreshUser();
-        },
-        child: SingleChildScrollView(
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: AppTheme.darkBgGradient,
+      ),
+      child: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: () async {
+            await authProvider.refreshUser();
+          },
+          child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Column(
@@ -223,16 +562,12 @@ class _NewHomeContentState extends State<NewHomeContent> {
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(24),
-                  gradient: const LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [Color(0xFF8E2B5F), Color(0xFFC25A8E), Color(0xFFE98CB7)],
-                  ),
+                  gradient: AppTheme.primaryGradient,
                   boxShadow: [
                     BoxShadow(
                       color: const Color(0xFF8E2B5F).withOpacity(0.3),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+                      blurRadius: 15,
+                      offset: const Offset(0, 6),
                     ),
                   ],
                 ),
@@ -312,89 +647,117 @@ class _NewHomeContentState extends State<NewHomeContent> {
                 ),
               ),
               const SizedBox(height: 15),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF16151A),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white.withOpacity(0.08)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.2),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Row(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.network(
-                        'https://images.unsplash.com/photo-1558981403-c5f91cbba527?w=100&h=100&fit=crop',
-                        width: 60,
-                        height: 60,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          return Container(
-                            width: 60,
-                            height: 60,
-                            color: Colors.grey[800],
-                            child: const Icon(Icons.person, color: Colors.white54),
-                          );
+              GestureDetector(
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const TrackingDriverScreen(
+                        bookingData: {
+                          'driverName': 'Kevin Sanjaya',
+                          'driverImage': 'https://i.pravatar.cc/300?img=3',
+                          'driverRating': '4.8',
+                          'vehicle': 'Vespa Primavera',
+                          'plateNumber': 'B 7777 KS',
+                          'totalPayment': 150000,
+                          'dp': 75000,
+                          'remainingPayment': 75000,
+                          'driverClass': 'Gold',
+                          'pickup': 'Central Park Mall',
+                          'destination': 'Grand Indonesia',
                         },
                       ),
                     ),
-                    const SizedBox(width: 15),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            "Partner: Kevin Sanjaya", 
-                            style: GoogleFonts.poppins(
-                              color: Colors.white, 
-                              fontWeight: FontWeight.bold
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFFF9DCC).withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.near_me_rounded, color: Color(0xFFFF9DCC), size: 12),
-                                SizedBox(width: 4),
-                                Text(
-                                  "On the Way",
-                                  style: TextStyle(color: Color(0xFFFF9DCC), fontSize: 11),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            "Arriving in 8 mins", 
-                            style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
-                          ),
-                        ],
+                  );
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: AppTheme.cardGradient,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: const Color(0xFFFF9DCC).withOpacity(0.12), width: 1.5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
                       ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      ClipRRect(
                         borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          'https://images.unsplash.com/photo-1558981403-c5f91cbba527?w=100&h=100&fit=crop',
+                          width: 60,
+                          height: 60,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              width: 60,
+                              height: 60,
+                              color: Colors.grey[800],
+                              child: const Icon(Icons.person, color: Colors.white54),
+                            );
+                          },
+                        ),
                       ),
-                      child: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white24, size: 14),
-                    ),
-                  ],
+                      const SizedBox(width: 15),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Partner: Kevin Sanjaya", 
+                              style: GoogleFonts.poppins(
+                                color: Colors.white, 
+                                fontWeight: FontWeight.bold
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFFF9DCC).withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.near_me_rounded, color: Color(0xFFFF9DCC), size: 12),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    "On the Way",
+                                    style: TextStyle(color: Color(0xFFFF9DCC), fontSize: 11),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              "Arriving in 8 mins", 
+                              style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white24, size: 14),
+                      ),
+                    ],
+                  ),
                 ),
               ),
+              const SizedBox(height: 25),
+
+              // Safety Hub Widget
+              _buildSafetyHubCard(),
               const SizedBox(height: 25),
 
               // Grid Menu
@@ -437,33 +800,7 @@ class _NewHomeContentState extends State<NewHomeContent> {
                 ],
               ),
               const SizedBox(height: 15),
-              Row(
-                children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => _navigateToPartnerProfile(context, 'Raka Wijaya', 'https://i.pravatar.cc/300?img=11', '4.9', false),
-                      child: _buildPartnerCard(
-                        'https://i.pravatar.cc/300?img=11',
-                        'Raka Wijaya',
-                        '4.9',
-                        false,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 15),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => _navigateToPartnerProfile(context, 'Dimas Satria', 'https://i.pravatar.cc/300?img=12', '5.0', true),
-                      child: _buildPartnerCard(
-                        'https://i.pravatar.cc/300?img=12',
-                        'Dimas Satria',
-                        '5.0',
-                        true,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+               _buildLiveDriversSection(),
               const SizedBox(height: 30),
 
               // Section: Explore by Category
@@ -571,13 +908,9 @@ class _NewHomeContentState extends State<NewHomeContent> {
               Container(
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [const Color(0xFF1A1920), const Color(0xFF16151A)],
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.white.withOpacity(0.08)),
+                  gradient: AppTheme.cardGradient,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: const Color(0xFFFF9DCC).withOpacity(0.08), width: 1),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -661,19 +994,23 @@ class _NewHomeContentState extends State<NewHomeContent> {
           ),
         ),
       ),
+    ),
     );
   }
 
   Widget _buildMenuCard(IconData icon, String title) {
     return Container(
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [const Color(0xFF1A1920), const Color(0xFF16151A)],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        gradient: AppTheme.cardGradient,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFFF9DCC).withOpacity(0.06), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -702,12 +1039,12 @@ class _NewHomeContentState extends State<NewHomeContent> {
     );
   }
 
-  Widget _buildPartnerCard(String img, String name, String rate, bool isElite) {
+  Widget _buildPartnerCard(String img, String name, String rate, String driverClass) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF16151A),
+        gradient: AppTheme.cardGradient,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        border: Border.all(color: Colors.white.withOpacity(0.06), width: 1),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.2),
@@ -737,24 +1074,23 @@ class _NewHomeContentState extends State<NewHomeContent> {
                   },
                 ),
               ),
-              if (isElite)
-                Positioned(
-                  top: 10,
-                  left: 10,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF8E2B5F), Color(0xFFC25A8E)],
-                      ),
-                      borderRadius: BorderRadius.circular(6),
+              Positioned(
+                top: 10,
+                left: 10,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF8E2B5F), Color(0xFFC25A8E)],
                     ),
-                    child: const Text(
-                      "ELITE",
-                      style: TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
-                    ),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    driverClass,
+                    style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold),
                   ),
                 ),
+              ),
               Positioned(
                 top: 10,
                 right: 10,
@@ -856,13 +1192,9 @@ class _NewHomeContentState extends State<NewHomeContent> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [const Color(0xFF1A1920), const Color(0xFF16151A).withOpacity(0.8)],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withOpacity(0.05)),
+        gradient: AppTheme.cardGradient,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.05), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

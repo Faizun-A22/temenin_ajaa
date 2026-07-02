@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:temenin_ajaa/core/services/auth_service.dart';
 import '../data/models/user_model.dart';
 import 'dart:io';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthProvider extends ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -11,11 +12,17 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoading = false;
   bool _isAuthenticated = false;
   String? _errorMessage;
+  String _userRole = 'user';
+  bool _isDriverVerified = false;
 
   UserModel? get user => _user;
   bool get isLoading => _isLoading;
   bool get isAuthenticated => _isAuthenticated;
   String? get errorMessage => _errorMessage;
+  String get userRole => _userRole;
+bool get isDriverVerified => _isDriverVerified;
+bool get isDriver => _userRole == 'driver';
+bool get isRegularUser => _userRole == 'user';
 
   bool get isLoggedIn => _isAuthenticated;  
 
@@ -69,38 +76,40 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // Login method
   Future<bool> login(String email, String password) async {
-    _isLoading = true;
-    _errorMessage = null;
-    notifyListeners();
+  _isLoading = true;
+  _errorMessage = null;
+  notifyListeners();
 
-    try {
-      final result = await _authService.login(email, password);
+  try {
+    final result = await _authService.login(email, password);
 
-      if (result['success'] == true) {
-        _user = result['user'];
-        _isAuthenticated = true;
-        
-        // Simpan user ke SharedPreferences
-        await _authService.updateLocalUser(_user!);
-        
-        _isLoading = false;
-        notifyListeners();
-        return true;
-      } else {
-        _errorMessage = result['message'] ?? 'Login gagal';
-        _isLoading = false;
-        notifyListeners();
-        return false;
-      }
-    } catch (e) {
-      _errorMessage = e.toString();
+    if (result['success'] == true) {
+      _user = result['user'];
+      _isAuthenticated = true;
+      
+      // Ambil role dari user
+      _userRole = _user?.role ?? 'user';
+      
+      // Simpan user ke SharedPreferences
+      await _authService.updateLocalUser(_user!);
+      
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } else {
+      _errorMessage = result['message'] ?? 'Login gagal';
       _isLoading = false;
       notifyListeners();
       return false;
     }
+  } catch (e) {
+    _errorMessage = e.toString();
+    _isLoading = false;
+    notifyListeners();
+    return false;
   }
+}
 
   // Refresh user data from server
   Future<bool> refreshUser() async {
@@ -436,4 +445,10 @@ class AuthProvider extends ChangeNotifier {
     }
     return false;
   }
+
+    Future<void> _saveUserRole(String role) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('userRole', role);
+  }
+
 }

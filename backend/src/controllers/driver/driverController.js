@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 const registerDriver = async (req, res) => {
   try {
     const {
-      email, password, full_name, phone,
+      email, password, full_name, phone, gender,
       vehicle_type, vehicle_name, plate_number,
       price_per_hour, experience_years, id_card_number,
       driver_license_number, vehicle_stnk
@@ -64,6 +64,7 @@ const registerDriver = async (req, res) => {
           password_hash: password_hash,
           full_name: full_name.trim(),
           phone: phone?.trim() || null,
+          gender: gender?.trim() || 'Laki-laki',
           role: 'driver',
           is_verified: true,
           balance: 0,
@@ -161,7 +162,8 @@ const getDriverProfile = async (req, res) => {
           full_name,
           email,
           phone,
-          avatar_url
+          avatar_url,
+          gender
         )
       `)
       .eq('user_id', userId)
@@ -316,7 +318,19 @@ const updateBookingStatus = async (req, res) => {
       })
       .eq('id', bookingId)
       .eq('driver_id', driver.id)
-      .select()
+      .select(`
+        *,
+        users:user_id (
+          id,
+          full_name,
+          email,
+          phone,
+          avatar_url,
+          role,
+          balance,
+          points
+        )
+      `)
       .single();
 
     if (error) {
@@ -422,11 +436,49 @@ const getDriverEarnings = async (req, res) => {
   }
 };
 
+// Get All Drivers (client-facing)
+const getAllDrivers = async (req, res) => {
+  try {
+    const { data: drivers, error } = await supabase
+      .from('drivers')
+      .select(`
+        *,
+        users:user_id (
+          full_name,
+          email,
+          phone,
+          avatar_url,
+          gender
+        )
+      `)
+      .eq('status', 'approved'); // Only return approved drivers
+
+    if (error) {
+      return res.status(400).json({
+        success: false,
+        message: error.message
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: drivers
+    });
+  } catch (error) {
+    console.error('Get all drivers error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error: ' + error.message
+    });
+  }
+};
+
 module.exports = {
   registerDriver,
   getDriverProfile,
   updateDriverStatus,
   getDriverBookings,
   updateBookingStatus,
-  getDriverEarnings
+  getDriverEarnings,
+  getAllDrivers
 };

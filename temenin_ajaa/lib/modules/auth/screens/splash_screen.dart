@@ -92,26 +92,24 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
   Widget _buildLogo() {
     return Container(
-      width: 96,
-      height: 96,
+      width: 110,
+      height: 110,
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppTheme.primaryPink, AppTheme.darkPink],
-        ),
         boxShadow: [
           BoxShadow(
-            color: AppTheme.primaryPink.withValues(alpha: 0.4),
-            blurRadius: 40,
+            color: AppTheme.primaryPink.withValues(alpha: 0.3),
+            blurRadius: 30,
+            spreadRadius: 2,
           ),
         ],
-        borderRadius: BorderRadius.circular(32),
+        borderRadius: BorderRadius.circular(36),
       ),
-      child: const Icon(
-        Icons.flash_on,
-        size: 40,
-        color: Colors.white,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(36),
+        child: Image.asset(
+          'assets/images/app_logo.jpg',
+          fit: BoxFit.cover,
+        ),
       ),
     );
   }

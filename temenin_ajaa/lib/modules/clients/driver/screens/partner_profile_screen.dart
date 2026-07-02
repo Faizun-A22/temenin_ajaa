@@ -6,6 +6,7 @@ import 'package:temenin_ajaa/modules/clients/chat/screens/chat_room_screen.dart'
 
 import 'package:temenin_ajaa/modules/clients/booking/screens/antar_jemput_booking_screen.dart';
 import 'package:temenin_ajaa/modules/clients/booking/screens/hangout_booking_screen.dart';
+import 'package:temenin_ajaa/modules/clients/booking/screens/freedom_request_booking_screen.dart';
 
 class PartnerProfileScreen extends StatelessWidget {
   final Map<String, dynamic>? partnerData;
@@ -40,7 +41,7 @@ class PartnerProfileScreen extends StatelessWidget {
                   const SizedBox(height: 30),
                   _buildSectionTitle("About $partnerName"),
                   const SizedBox(height: 10),
-                  _buildDescription(partnerName),
+                  _buildDescription(partnerName, partnerData?['vehicle_stnk']),
                   const SizedBox(height: 30),
                   _buildSectionTitle("Vehicle Details"),
                   const SizedBox(height: 15),
@@ -76,7 +77,9 @@ class PartnerProfileScreen extends StatelessWidget {
           width: double.infinity,
           decoration: BoxDecoration(
             image: DecorationImage(
-              image: NetworkImage(image),
+              image: (image.startsWith('http')
+                  ? NetworkImage(image)
+                  : AssetImage(image)) as ImageProvider,
               fit: BoxFit.cover,
             ),
           ),
@@ -242,9 +245,13 @@ class PartnerProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDescription(String name) {
+  Widget _buildDescription(String name, String? bio) {
+    final displayBio = (bio != null && bio.trim().isNotEmpty)
+        ? bio
+        : "Halo! Saya adalah mitra pendamping Temenin Ajaa yang siap membantu mendampingi perjalanan Anda dengan aman, ramah, dan menyenangkan.";
+
     return Text(
-      "Professional companion and rider specializing in premium city tours and errand runs. Known for punctuality and high-level safety standards. Fluent in English and passionate about delivering a first-class experience for every trip.",
+      displayBio,
       style: GoogleFonts.poppins(
         color: Colors.white.withValues(alpha: 0.6),
         fontSize: 14,
@@ -267,8 +274,8 @@ class PartnerProfileScreen extends StatelessWidget {
             children: [
               ClipRRect(
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-                child: Image.network(
-                  'https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?q=80&w=1000', 
+                child: Image.asset(
+                  'assets/images/bike/bike1.jpg',
                   height: 180, 
                   width: double.infinity, 
                   fit: BoxFit.cover,
@@ -447,6 +454,7 @@ class PartnerProfileScreen extends StatelessWidget {
                   MaterialPageRoute(
                     builder: (context) => AntarJemputBookingScreen(
                       selectedPartner: {
+                        'id': partnerData?['id'],
                         'name': name,
                         'vehicle': vehicle,
                         'rating': rating,
@@ -474,6 +482,35 @@ class PartnerProfileScreen extends StatelessWidget {
                   MaterialPageRoute(
                     builder: (context) => HangoutBookingScreen(
                       selectedPartner: {
+                        'id': partnerData?['id'],
+                        'name': name,
+                        'vehicle': vehicle,
+                        'rating': rating,
+                        'image': image,
+                        'tag': tag,
+                        'price': price,
+                      },
+                    ),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 15),
+            _buildBookingOption(
+              context: context,
+              title: "Freedom Request",
+              subtitle: "Request kebutuhan apa saja, fleksibilitas tinggi & deskripsi terbuka",
+              icon: Icons.explore_rounded,
+              color: const Color(0xFF00ADB5),
+              iconColor: const Color(0xFF00ADB5),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => FreedomRequestBookingScreen(
+                      selectedPartner: {
+                        'id': partnerData?['id'],
                         'name': name,
                         'vehicle': vehicle,
                         'rating': rating,
@@ -492,7 +529,7 @@ class PartnerProfileScreen extends StatelessWidget {
               child: Text(
                 "Batal",
                 style: GoogleFonts.poppins(
-                  color: Colors.white.withValues(alpha: 0.5),
+                  color: Colors.white.withOpacity(0.5),
                   fontSize: 14,
                 ),
               ),

@@ -28,11 +28,17 @@ dev_dependencies:
     sdk: flutter
   flutter_lints: ^3.0.0
   flutter_project_structure: ^2.0.4
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/
+    - assets/images/partners/
+    - assets/images/bike/
+    - assets/images/app_logo.jpg
 
-fonts:
+  fonts:
     - family: Poppins
       fonts:
         - asset: assets/fonts/Poppins-Regular.ttf
@@ -45,5 +51,11 @@ fonts:
           weight: 700
         - asset: assets/fonts/Poppins-ExtraBold.ttf
           weight: 800
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/app_logo.jpg"
+  remove_alpha_ios: true
   
  
