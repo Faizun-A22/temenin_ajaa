@@ -1,6 +1,6 @@
 const app = require('./app');
 
-const PORT = process.env.PORT || 3001;
+const PORT = 3004; // Hardcoded to 3004 to prevent PM2 env port conflicts
 
 const server = app.listen(PORT, () => {
   console.log('\n═══════════════════════════════════════════════════');

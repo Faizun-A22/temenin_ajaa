@@ -1,6 +1,6 @@
 const app = require('./src/app');
 
-const PORT = process.env.PORT || 3000;
+const PORT = 3002; // Hardcoded to 3002 to prevent PM2 env port conflicts
 let server;
 
 // Graceful shutdown function
