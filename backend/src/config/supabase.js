@@ -1,14 +1,14 @@
 // backend/src/config/supabase.js
 
-const { createClient } = require('@supabase/supabase-js');
-require('dotenv').config();
-
 // Polyfill WebSocket globally for Node.js < 22 Supabase compatibility
 try {
   global.WebSocket = require('ws');
 } catch (e) {
-  // ws not installed yet
+  console.warn('⚠️ ws package is not installed/loaded:', e.message);
 }
+
+const { createClient } = require('@supabase/supabase-js');
+require('dotenv').config();
 
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;

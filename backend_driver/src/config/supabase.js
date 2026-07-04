@@ -1,3 +1,10 @@
+// Polyfill WebSocket globally for Node.js < 22 Supabase compatibility
+try {
+  global.WebSocket = require('ws');
+} catch (e) {
+  console.warn('⚠️ ws package is not installed/loaded:', e.message);
+}
+
 const { createClient } = require('@supabase/supabase-js');
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../../.env') });
@@ -8,13 +15,6 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('SUPABASE_URL and SUPABASE_ANON_KEY must be provided in .env');
-}
-
-// Polyfill WebSocket globally for Node.js < 22 Supabase compatibility
-try {
-  global.WebSocket = require('ws');
-} catch (e) {
-  // ws not installed yet
 }
 
 // Client for general operations (uses service key if available to bypass RLS in backend)
